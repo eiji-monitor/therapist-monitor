@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#111827">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Therapist Monitor</title>
+<title>Therapist Monitor Push Test v2</title>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f4f6;margin:0;color:#111827}
 .wrap{max-width:430px;margin:auto;padding:24px 18px}.card{background:white;border-radius:20px;padding:24px;box-shadow:0 4px 20px #0001}
@@ -28,7 +28,7 @@ button{width:100%;padding:15px;border:0;border-radius:14px;font-size:17px;font-w
 <div class="log">
 <div>最終操作：<span id="last">まだありません</span></div>
 <div>プッシュ登録：<span id="pushState">未登録</span></div>
-<div class="small" id="info"></div>
+<div class="small" id="info"></div><div class="small" id="debug"></div>
 <div>※ この版ではiPhoneからPCへON/OFFはまだ送信しません。</div>
 </div></div></div>
 <script>
@@ -36,7 +36,8 @@ const VAPID_PUBLIC_KEY="BCbrgAbFGpaGUZZ4mrV7xUAmOgGroWUj1tLKkjCDU6ZNDhV5ISUg831b
 const status=document.getElementById("status"),toggle=document.getElementById("toggle");
 const subscribe=document.getElementById("subscribe"),copy=document.getElementById("copy");
 const local=document.getElementById("local"),last=document.getElementById("last");
-const pushState=document.getElementById("pushState"),info=document.getElementById("info");
+const pushState=document.getElementById("pushState"),info=document.getElementById("info"),debug=document.getElementById("debug");
+function showDebug(msg){debug.textContent="診断: "+msg;}
 let monitoring=localStorage.getItem("monitoring")!=="off";
 function render(){status.textContent=monitoring?"🟢 監視中":"🔴 停止中";toggle.textContent=monitoring?"監視 OFF":"監視 ON";toggle.className=monitoring?"off":"on";}
 function stamp(){last.textContent=new Date().toLocaleString("ja-JP");}
@@ -50,16 +51,21 @@ async function getSub(){
  return await reg.pushManager.getSubscription();
 }
 async function subscribePush(){
+ showDebug("登録処理を開始しました");
+ try {
  if(!("serviceWorker"in navigator) || !("PushManager"in window)){alert("この環境ではWeb Pushを利用できません。");return;}
  if(Notification.permission==="default") await Notification.requestPermission();
- if(Notification.permission!=="granted"){alert("通知を許可してください。");return;}
+ if(Notification.permission!=="granted"){showDebug("通知の許可状態: "+Notification.permission); alert("通知を許可してください。");return;}
+ showDebug("通知は許可済みです。Service Workerを確認中...");
  const reg=await navigator.serviceWorker.ready;
  let sub=await reg.pushManager.getSubscription();
  if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
  localStorage.setItem("pushSubscription",JSON.stringify(sub));
+ showDebug("プッシュ登録に成功しました");
  pushState.textContent="登録済み";
  info.textContent="登録情報を「登録情報をコピー」でPCへ移してください。";
  stamp();
+ } catch(e) { showDebug("エラー: "+(e && e.name ? e.name+" / "+e.message : e)); alert("プッシュ登録でエラーが発生しました。画面下の「診断」を確認してください。"); }
 }
 copy.onclick=async()=>{
  const sub=await getSub();
