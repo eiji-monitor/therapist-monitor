@@ -12,32 +12,76 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .wrap{max-width:430px;margin:auto;padding:24px 18px}.card{background:white;border-radius:20px;padding:24px;box-shadow:0 4px 20px #0001}
 h1{font-size:24px;margin:0 0 24px}.label{font-size:14px;color:#6b7280}
 .status{font-size:30px;font-weight:700;margin:8px 0 22px}
-button{width:100%;padding:16px;border:0;border-radius:14px;font-size:18px;font-weight:700;margin-top:10px}
+button{width:100%;padding:15px;border:0;border-radius:14px;font-size:17px;font-weight:700;margin-top:10px}
 .on{background:#111827;color:white}.off{background:#e5e7eb;color:#111827}.test{background:#dbeafe;color:#1e3a8a}
+.small{font-size:12px;color:#6b7280;margin-top:16px;word-break:break-all}
 .log{margin-top:22px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;line-height:1.7}
 </style>
 </head>
 <body><div class="wrap"><div class="card">
 <h1>Therapist Monitor</h1>
 <div class="label">現在の状態</div><div id="status" class="status"></div>
-<button id="toggle"></button><button id="notify" class="test">通知テスト</button>
-<div class="log"><div>最終操作：<span id="last">まだありません</span></div>
-<div>※ 試作版：まだPCとの通信は行いません。</div></div>
-</div></div>
+<button id="toggle"></button>
+<button id="subscribe" class="test">プッシュ通知を登録</button>
+<button id="copy" class="test">登録情報をコピー</button>
+<button id="local" class="test">ローカル通知テスト</button>
+<div class="log">
+<div>最終操作：<span id="last">まだありません</span></div>
+<div>プッシュ登録：<span id="pushState">未登録</span></div>
+<div class="small" id="info"></div>
+<div>※ この版ではiPhoneからPCへON/OFFはまだ送信しません。</div>
+</div></div></div>
 <script>
+const VAPID_PUBLIC_KEY="BCbrgAbFGpaGUZZ4mrV7xUAmOgGroWUj1tLKkjCDU6ZNDhV5ISUg831bllafAAxAbDBj2DJui1lTnBC6vqlM7bQ";
 const status=document.getElementById("status"),toggle=document.getElementById("toggle");
-const notify=document.getElementById("notify"),last=document.getElementById("last");
+const subscribe=document.getElementById("subscribe"),copy=document.getElementById("copy");
+const local=document.getElementById("local"),last=document.getElementById("last");
+const pushState=document.getElementById("pushState"),info=document.getElementById("info");
 let monitoring=localStorage.getItem("monitoring")!=="off";
 function render(){status.textContent=monitoring?"🟢 監視中":"🔴 停止中";toggle.textContent=monitoring?"監視 OFF":"監視 ON";toggle.className=monitoring?"off":"on";}
 function stamp(){last.textContent=new Date().toLocaleString("ja-JP");}
-toggle.onclick=()=>{monitoring=!monitoring;localStorage.setItem("monitoring",monitoring?"on":"off");render();stamp();};
-notify.onclick=async()=>{
- if(!("Notification"in window)){alert("この環境では通知を利用できません。");return;}
+function urlBase64ToUint8Array(base64String){
+ const padding="=".repeat((4-base64String.length%4)%4);
+ const raw=atob((base64String+padding).replace(/-/g,"+").replace(/_/g,"/"));
+ return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+async function getSub(){
+ const reg=await navigator.serviceWorker.ready;
+ return await reg.pushManager.getSubscription();
+}
+async function subscribePush(){
+ if(!("serviceWorker"in navigator) || !("PushManager"in window)){alert("この環境ではWeb Pushを利用できません。");return;}
  if(Notification.permission==="default") await Notification.requestPermission();
- if(Notification.permission==="granted"){new Notification("Therapist Monitor",{body:"これは通知機能のテストです。",icon:"icon-192.png"});stamp();}
+ if(Notification.permission!=="granted"){alert("通知を許可してください。");return;}
+ const reg=await navigator.serviceWorker.ready;
+ let sub=await reg.pushManager.getSubscription();
+ if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+ localStorage.setItem("pushSubscription",JSON.stringify(sub));
+ pushState.textContent="登録済み";
+ info.textContent="登録情報を「登録情報をコピー」でPCへ移してください。";
+ stamp();
+}
+copy.onclick=async()=>{
+ const sub=await getSub();
+ if(!sub){alert("先に「プッシュ通知を登録」を押してください。");return;}
+ const txt=JSON.stringify(sub);
+ localStorage.setItem("pushSubscription",txt);
+ try{await navigator.clipboard.writeText(txt);alert("登録情報をコピーしました。PCへ貼り付けてください。");}
+ catch(e){alert("コピーできませんでした。画面に表示された情報を長押ししてコピーしてください。");}
+ info.textContent=txt;
+};
+toggle.onclick=()=>{monitoring=!monitoring;localStorage.setItem("monitoring",monitoring?"on":"off");render();stamp();};
+local.onclick=async()=>{
+ if(!("Notification"in window)){alert("通知APIがありません。");return;}
+ if(Notification.permission==="default") await Notification.requestPermission();
+ if(Notification.permission==="granted"){new Notification("Therapist Monitor",{body:"これはローカル通知テストです。",icon:"icon-192.png"});stamp();}
  else alert("通知が許可されていません。");
 };
-render();
-if("serviceWorker"in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+(async()=>{
+ render();
+ if("serviceWorker"in navigator) await navigator.serviceWorker.register("sw.js");
+ const sub=await getSub().catch(()=>null);
+ if(sub){pushState.textContent="登録済み";}
+})();
 </script>
 </body></html>
