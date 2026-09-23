@@ -30,8 +30,17 @@ async function regPush(){
   if(p!=="granted")throw Error("通知許可がgrantedではありません: "+p);
   const r=await navigator.serviceWorker.register("./sw.js",{scope:"./"});
   await navigator.serviceWorker.ready; log("Service Worker: OK");
-  let sub=await r.pushManager.getSubscription();
-  if(!sub){log("PushSubscriptionを作成します…");sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:keyBytes(KEY)})}
+let sub=await r.pushManager.getSubscription();
+if(sub){
+  log("既存のPushSubscriptionを解除します…");
+  await sub.unsubscribe();
+  sub=null;
+}
+log("新しいPushSubscriptionを作成します…");
+sub=await r.pushManager.subscribe({
+  userVisibleOnly:true,
+  applicationServerKey:keyBytes(KEY)
+});
   localStorage.setItem("pushSubscription",JSON.stringify(sub));
   log("★ プッシュ通知の登録に成功しました！");
  }catch(e){log("ERROR: "+(e&&e.message?e.message:String(e)))}
