@@ -1,1 +1,1 @@
-Web Pushテスト版。GitHub Pagesにはこのフォルダの4ファイルとアイコンだけをアップロードしてください。PC senderフォルダはアップロード禁止です。
+iPhone Web Push diagnostic version. Replace the same-named GitHub Pages files. No private key is included.

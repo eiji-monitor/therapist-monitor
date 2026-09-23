@@ -1,93 +1,46 @@
 <!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#111827">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>Therapist Monitor Push Test v2</title>
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f4f6;margin:0;color:#111827}
-.wrap{max-width:430px;margin:auto;padding:24px 18px}.card{background:white;border-radius:20px;padding:24px;box-shadow:0 4px 20px #0001}
-h1{font-size:24px;margin:0 0 24px}.label{font-size:14px;color:#6b7280}
-.status{font-size:30px;font-weight:700;margin:8px 0 22px}
-button{width:100%;padding:15px;border:0;border-radius:14px;font-size:17px;font-weight:700;margin-top:10px}
-.on{background:#111827;color:white}.off{background:#e5e7eb;color:#111827}.test{background:#dbeafe;color:#1e3a8a}
-.small{font-size:12px;color:#6b7280;margin-top:16px;word-break:break-all}
-.log{margin-top:22px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;line-height:1.7}
-</style>
-</head>
-<body><div class="wrap"><div class="card">
-<h1>Therapist Monitor</h1>
-<div class="label">現在の状態</div><div id="status" class="status"></div>
-<button id="toggle"></button>
-<button id="subscribe" class="test">プッシュ通知を登録</button>
-<button id="copy" class="test">登録情報をコピー</button>
-<button id="local" class="test">ローカル通知テスト</button>
-<div class="log">
-<div>最終操作：<span id="last">まだありません</span></div>
-<div>プッシュ登録：<span id="pushState">未登録</span></div>
-<div class="small" id="info"></div><div class="small" id="debug"></div>
-<div>※ この版ではiPhoneからPCへON/OFFはまだ送信しません。</div>
-</div></div></div>
+<link rel="manifest" href="manifest.webmanifest"><title>Therapist Monitor</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;margin:0;padding:20px;background:#f6f7f9}main{max-width:620px;margin:auto;background:white;padding:20px;border-radius:16px}button{width:100%;padding:15px;margin:8px 0;border:0;border-radius:12px;font-size:17px;background:#111827;color:white}#status{white-space:pre-wrap;background:#eef2f7;padding:12px;border-radius:10px;min-height:100px;font-size:14px}</style>
+</head><body><main>
+<h2>Therapist Monitor</h2><p>iPhone Web Push 診断版</p>
+<button id="pushBtn">① プッシュ通知を登録</button>
+<button id="testBtn">② ローカル通知テスト</button>
+<button id="copyBtn">③ 登録情報をコピー</button>
+<h3>診断結果</h3><div id="status">ページを読み込みました。</div>
 <script>
-const VAPID_PUBLIC_KEY="BCbrgAbFGpaGUZZ4mrV7xUAmOgGroWUj1tLKkjCDU6ZNDhV5ISUg831bllafAAxAbDBj2DJui1lTnBC6vqlM7bQ";
-const status=document.getElementById("status"),toggle=document.getElementById("toggle");
-const subscribe=document.getElementById("subscribe"),copy=document.getElementById("copy");
-const local=document.getElementById("local"),last=document.getElementById("last");
-const pushState=document.getElementById("pushState"),info=document.getElementById("info"),debug=document.getElementById("debug");
-function showDebug(msg){debug.textContent="診断: "+msg;}
-let monitoring=localStorage.getItem("monitoring")!=="off";
-function render(){status.textContent=monitoring?"🟢 監視中":"🔴 停止中";toggle.textContent=monitoring?"監視 OFF":"監視 ON";toggle.className=monitoring?"off":"on";}
-function stamp(){last.textContent=new Date().toLocaleString("ja-JP");}
-function urlBase64ToUint8Array(base64String){
- const padding="=".repeat((4-base64String.length%4)%4);
- const raw=atob((base64String+padding).replace(/-/g,"+").replace(/_/g,"/"));
- return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+const KEY="BMrH7PoStzYDfgD23pnGHX2OzzTOzH4WQRju6z4_B9XzXKosFQaoRhb9Ui4b-RdhxBL4-MMe3pdSLPo8qC7_cDc";
+const S=document.getElementById("status");
+function log(x){S.textContent+="\n"+x}
+function keyBytes(s){const p="=".repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
+async function regPush(){
+ S.textContent="ボタンが押されました。登録処理を開始します。";
+ try{
+  log("standalone表示: "+(matchMedia("(display-mode: standalone)").matches?"YES":"NO"));
+  log("Notification API: "+("Notification"in window?"YES":"NO"));
+  log("Service Worker: "+("serviceWorker"in navigator?"YES":"NO"));
+  log("PushManager(window): "+("pushManager"in window?"YES":"NO"));
+  if(!("Notification"in window))throw Error("Notification APIがありません。");
+  if(!("serviceWorker"in navigator))throw Error("Service Worker APIがありません。");
+  log("通知許可を確認します…");
+  let p=Notification.permission; log("現在の通知許可: "+p);
+  if(p==="default"){p=await Notification.requestPermission();log("通知許可の結果: "+p)}
+  if(p!=="granted")throw Error("通知許可がgrantedではありません: "+p);
+  const r=await navigator.serviceWorker.register("./sw.js",{scope:"./"});
+  await navigator.serviceWorker.ready; log("Service Worker: OK");
+  let sub=await r.pushManager.getSubscription();
+  if(!sub){log("PushSubscriptionを作成します…");sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:keyBytes(KEY)})}
+  localStorage.setItem("pushSubscription",JSON.stringify(sub));
+  log("★ プッシュ通知の登録に成功しました！");
+ }catch(e){log("ERROR: "+(e&&e.message?e.message:String(e)))}
 }
-async function getSub(){
- const reg=await navigator.serviceWorker.ready;
- return await reg.pushManager.getSubscription();
+async function localTest(){
+ S.textContent="ローカル通知テストを開始します。";
+ try{if(!("Notification"in window))throw Error("Notification APIがありません。");let p=Notification.permission;if(p==="default")p=await Notification.requestPermission();if(p!=="granted")throw Error("通知許可がありません: "+p);new Notification("Therapist Monitor",{body:"ローカル通知テストです。"});log("ローカル通知を発行しました。")}catch(e){log("ERROR: "+(e&&e.message?e.message:String(e)))}
 }
-async function subscribePush(){
- showDebug("登録処理を開始しました");
- try {
- if(!("serviceWorker"in navigator) || !("PushManager"in window)){alert("この環境ではWeb Pushを利用できません。");return;}
- if(Notification.permission==="default") await Notification.requestPermission();
- if(Notification.permission!=="granted"){showDebug("通知の許可状態: "+Notification.permission); alert("通知を許可してください。");return;}
- showDebug("通知は許可済みです。Service Workerを確認中...");
- const reg=await navigator.serviceWorker.ready;
- let sub=await reg.pushManager.getSubscription();
- if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
- localStorage.setItem("pushSubscription",JSON.stringify(sub));
- showDebug("プッシュ登録に成功しました");
- pushState.textContent="登録済み";
- info.textContent="登録情報を「登録情報をコピー」でPCへ移してください。";
- stamp();
- } catch(e) { showDebug("エラー: "+(e && e.name ? e.name+" / "+e.message : e)); alert("プッシュ登録でエラーが発生しました。画面下の「診断」を確認してください。"); }
-}
-copy.onclick=async()=>{
- const sub=await getSub();
- if(!sub){alert("先に「プッシュ通知を登録」を押してください。");return;}
- const txt=JSON.stringify(sub);
- localStorage.setItem("pushSubscription",txt);
- try{await navigator.clipboard.writeText(txt);alert("登録情報をコピーしました。PCへ貼り付けてください。");}
- catch(e){alert("コピーできませんでした。画面に表示された情報を長押ししてコピーしてください。");}
- info.textContent=txt;
-};
-toggle.onclick=()=>{monitoring=!monitoring;localStorage.setItem("monitoring",monitoring?"on":"off");render();stamp();};
-local.onclick=async()=>{
- if(!("Notification"in window)){alert("通知APIがありません。");return;}
- if(Notification.permission==="default") await Notification.requestPermission();
- if(Notification.permission==="granted"){new Notification("Therapist Monitor",{body:"これはローカル通知テストです。",icon:"icon-192.png"});stamp();}
- else alert("通知が許可されていません。");
-};
-(async()=>{
- render();
- if("serviceWorker"in navigator) await navigator.serviceWorker.register("sw.js");
- const sub=await getSub().catch(()=>null);
- if(sub){pushState.textContent="登録済み";}
-})();
-</script>
-</body></html>
+function copySub(){const x=localStorage.getItem("pushSubscription");if(!x){log("まだPush登録情報がありません。①を先に押してください。");return}navigator.clipboard.writeText(x).then(()=>log("登録情報をコピーしました。"),e=>log("コピー失敗: "+e))}
+pushBtn.onclick=regPush;testBtn.onclick=localTest;copyBtn.onclick=copySub;
+log("URL: "+location.href);log("画面読み込み完了。");
+</script></main></body></html>
