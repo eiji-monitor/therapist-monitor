@@ -5,7 +5,13 @@
 <link rel="manifest" href="manifest.webmanifest"><title>Therapist Monitor</title>
 <style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;margin:0;padding:20px;background:#f6f7f9}main{max-width:620px;margin:auto;background:white;padding:20px;border-radius:16px}button{width:100%;padding:15px;margin:8px 0;border:0;border-radius:12px;font-size:17px;background:#111827;color:white}#status{white-space:pre-wrap;background:#eef2f7;padding:12px;border-radius:10px;min-height:100px;font-size:14px}</style>
 </head><body><main>
-<h2>Therapist Monitor</h2><p>iPhone Web Push 診断版</p>
+<h2>Therapist Monitor</h2>
+<p>iPhone Web Push / 監視設定</p>
+<div style="padding:14px;margin:12px 0;background:#eef2f7;border-radius:12px">
+  <div style="font-size:15px;margin-bottom:8px"><b>監視状態</b></div>
+  <button id="monitorBtn" style="margin:0">読み込み中…</button>
+  <div id="monitorStatus" style="font-size:14px;margin-top:8px">Firebaseの設定を読み込んでいます。</div>
+</div>
 <button id="pushBtn">① プッシュ通知を登録</button>
 <button id="testBtn">② ローカル通知テスト</button>
 <button id="copyBtn">③ 登録情報をコピー</button>
@@ -13,6 +19,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+  import { getDatabase, ref, get, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDeXKftF2-7yBRSJhIOP6kLd9mq2A4movU",
@@ -27,6 +34,7 @@
 
   const firebaseApp = initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
+  const db = getDatabase(firebaseApp);
 
   signInAnonymously(auth).catch((e) => {
     console.error("Firebase匿名認証エラー:", e);
@@ -34,14 +42,68 @@
     if (s) s.textContent += "\nFirebase匿名認証エラー: " + (e.message || e);
   });
 
-  onAuthStateChanged(auth, (user) => {
+  let currentUser = null;
+  let monitoring = false;
+
+  function renderMonitorButton() {
+    const btn = document.getElementById("monitorBtn");
+    const st = document.getElementById("monitorStatus");
+    if (!btn || !st) return;
+    btn.textContent = monitoring ? "監視 ON（タップでOFF）" : "監視 OFF（タップでON）";
+    btn.style.background = monitoring ? "#166534" : "#6b7280";
+    st.textContent = monitoring
+      ? "現在：監視ON"
+      : "現在：監視OFF";
+  }
+
+  async function loadMonitoringSetting(user) {
+    const snap = await get(ref(db, "control/" + user.uid));
+    if (snap.exists() && typeof snap.val().monitoring === "boolean") {
+      monitoring = snap.val().monitoring;
+    } else {
+      monitoring = false;
+    }
+    renderMonitorButton();
+  }
+
+  async function toggleMonitoring() {
+    if (!currentUser) {
+      log("Firebase認証がまだ完了していません。");
+      return;
+    }
+    monitoring = !monitoring;
+    renderMonitorButton();
+    try {
+      await set(ref(db, "control/" + currentUser.uid), {
+        monitoring: monitoring,
+        updatedAt: serverTimestamp()
+      });
+      log("監視設定をFirebaseに保存しました: " + (monitoring ? "ON" : "OFF"));
+    } catch (e) {
+      monitoring = !monitoring;
+      renderMonitorButton();
+      log("監視設定の保存エラー: " + (e && e.message ? e.message : e));
+    }
+  }
+
+  onAuthStateChanged(auth, async (user) => {
     const s = document.getElementById("status");
     if (!s) return;
     if (user) {
+      currentUser = user;
       s.textContent += "\nFirebase匿名認証: OK";
       s.textContent += "\nFirebase UID: " + user.uid;
+      try {
+        await loadMonitoringSetting(user);
+        s.textContent += "\n監視設定の読み込み: OK";
+      } catch (e) {
+        s.textContent += "\n監視設定の読み込みエラー: " + (e.message || e);
+      }
     }
   });
+
+  document.getElementById("monitorBtn").addEventListener("click", toggleMonitoring);
+  renderMonitorButton();
 </script>
 
 <script>
