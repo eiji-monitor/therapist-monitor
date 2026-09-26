@@ -10,6 +10,40 @@
 <button id="testBtn">② ローカル通知テスト</button>
 <button id="copyBtn">③ 登録情報をコピー</button>
 <h3>診断結果</h3><div id="status">ページを読み込みました。</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeXKftF2-7yBRSJhIOP6kLd9mq2A4movU",
+    authDomain: "therapist-monitor.firebaseapp.com",
+    databaseURL: "https://therapist-monitor-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "therapist-monitor",
+    storageBucket: "therapist-monitor.firebasestorage.app",
+    messagingSenderId: "171637749913",
+    appId: "1:171637749913:web:23066401df0c2482892008",
+    measurementId: "G-RDF44SBPR8"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const auth = getAuth(firebaseApp);
+
+  signInAnonymously(auth).catch((e) => {
+    console.error("Firebase匿名認証エラー:", e);
+    const s = document.getElementById("status");
+    if (s) s.textContent += "\nFirebase匿名認証エラー: " + (e.message || e);
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    const s = document.getElementById("status");
+    if (!s) return;
+    if (user) {
+      s.textContent += "\nFirebase匿名認証: OK";
+      s.textContent += "\nFirebase UID: " + user.uid;
+    }
+  });
+</script>
+
 <script>
 const KEY="BJOfQEQsoQ-jgRyVXzNqtleFFt-Wl9_RKIBQg7Epo9Q3POq__D0zz9WzPJ_Fb-G_o6ESOAyRbHcHcaXYtgkJHAI";
 const S=document.getElementById("status");
