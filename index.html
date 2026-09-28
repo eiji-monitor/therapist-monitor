@@ -1,910 +1,248 @@
 <!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
+<html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#111827">
-<link rel="manifest" href="manifest.webmanifest">
-<title>Therapist Monitor</title>
-
-<style>
-body{
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  margin:0;
-  padding:20px;
-  background:#f6f7f9
-}
-main{
-  max-width:620px;
-  margin:auto;
-  background:white;
-  padding:20px;
-  border-radius:16px
-}
-button{
-  width:100%;
-  padding:15px;
-  margin:8px 0;
-  border:0;
-  border-radius:12px;
-  font-size:17px;
-  background:#111827;
-  color:white
-}
-input{
-  width:100%;
-  box-sizing:border-box;
-  padding:13px;
-  margin:6px 0;
-  border:1px solid #d1d5db;
-  border-radius:10px;
-  font-size:16px
-}
-#status{
-  white-space:pre-wrap;
-  background:#eef2f7;
-  padding:12px;
-  border-radius:10px;
-  min-height:100px;
-  font-size:14px
-}
-#loginArea{
-  padding:14px;
-  margin:12px 0;
-  background:#eef2f7;
-  border-radius:12px
-}
-</style>
-</head>
-
-<body>
-<main>
-
+<link rel="manifest" href="manifest.webmanifest"><title>Therapist Monitor</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;margin:0;padding:20px;background:#f6f7f9}main{max-width:620px;margin:auto;background:white;padding:20px;border-radius:16px}button{width:100%;padding:15px;margin:8px 0;border:0;border-radius:12px;font-size:17px;background:#111827;color:white}#status{white-space:pre-wrap;background:#eef2f7;padding:12px;border-radius:10px;min-height:100px;font-size:14px}</style>
+</head><body><main>
 <h2>Therapist Monitor</h2>
 <p>iPhone Web Push / 監視設定</p>
-
-<!-- ログイン -->
-<div id="loginArea">
-
-  <div style="font-size:15px;margin-bottom:8px">
-    <b>Firebaseログイン</b>
-  </div>
-
-  <input
-    id="emailInput"
-    type="email"
-    placeholder="メールアドレス"
-    autocomplete="username"
-  >
-
-  <input
-    id="passwordInput"
-    type="password"
-    placeholder="パスワード"
-    autocomplete="current-password"
-  >
-
-  <button id="loginBtn">ログイン</button>
-
-  <button
-    id="logoutBtn"
-    style="display:none;background:#6b7280"
-  >
-    ログアウト
-  </button>
-
-  <div
-    id="loginStatus"
-    style="font-size:14px;margin-top:8px"
-  >
-    ログインしていません。
-  </div>
-
+<div style="padding:14px;margin:12px 0;background:#eef2f7;border-radius:12px">
+  <h3 style="margin-top:0">Firebaseログイン</h3>
+  <label for="email">メールアドレス</label>
+  <input id="email" type="email" autocomplete="username" style="box-sizing:border-box;width:100%;padding:12px;margin:6px 0 10px;border:1px solid #bbb;border-radius:8px">
+  <label for="password">パスワード</label>
+  <input id="password" type="password" autocomplete="current-password" style="box-sizing:border-box;width:100%;padding:12px;margin:6px 0 10px;border:1px solid #bbb;border-radius:8px">
+  <button id="loginBtn" style="margin:0">Firebaseログイン</button>
+  <div id="loginStatus" style="font-size:13px;margin-top:8px">未ログイン</div>
 </div>
-
-
-<!-- 監視状態 -->
-<div
-  style="padding:14px;margin:12px 0;background:#eef2f7;border-radius:12px"
->
-
-  <div style="font-size:15px;margin-bottom:8px">
-    <b>監視状態</b>
-  </div>
-
-  <button
-    id="monitorBtn"
-    style="margin:0;background:#6b7280"
-    disabled
-  >
-    ログインしてください
-  </button>
-
-  <div
-    id="monitorStatus"
-    style="font-size:14px;margin-top:8px"
-  >
-    Firebaseにログインすると監視設定を操作できます。
-  </div>
-
+<div style="padding:14px;margin:12px 0;background:#eef2f7;border-radius:12px">
+  <h3 style="margin-top:0">監視設定</h3>
+  <label for="castSelect">監視対象セラピスト</label>
+  <select id="castSelect" style="box-sizing:border-box;width:100%;padding:12px;margin:6px 0 10px;border:1px solid #bbb;border-radius:8px;background:white">
+    <option value="">PCから一覧を読み込み中…</option>
+  </select>
+  <label for="intervalSeconds">監視間隔（秒）</label>
+  <input id="intervalSeconds" type="number" min="1" max="86400" step="1" value="3600" style="box-sizing:border-box;width:100%;padding:12px;margin:6px 0 10px;border:1px solid #bbb;border-radius:8px">
+  <button id="saveSettingsBtn" style="margin:0">監視設定を保存</button>
+  <div style="font-size:12px;margin-top:8px">セラピストのURLは、PC側で対象者を選択したときに表示されるURLを入力してください。</div>
 </div>
-
-
-<button id="pushBtn">
-① プッシュ通知を登録
-</button>
-
-<button id="testBtn">
-② ローカル通知テスト
-</button>
-
-<button id="copyBtn">
-③ 登録情報をコピー
-</button>
-
-
-<h3>診断結果</h3>
-
-<div id="status">
-ページを読み込みました。
+<div style="padding:14px;margin:12px 0;background:#eef2f7;border-radius:12px">
+  <div style="font-size:15px;margin-bottom:8px"><b>監視状態</b></div>
+  <button id="monitorBtn" style="margin:0">読み込み中…</button>
+  <div id="monitorStatus" style="font-size:14px;margin-top:8px">Firebaseの設定を読み込んでいます。</div>
 </div>
-
-
+<button id="pushBtn">① プッシュ通知を登録</button>
+<button id="testBtn">② ローカル通知テスト</button>
+<button id="copyBtn">③ 登録情報をコピー</button>
+<h3>診断結果</h3><div id="status">ページを読み込みました。</div>
 <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+  import { getDatabase, ref, get, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeXKftF2-7yBRSJhIOP6kLd9mq2A4movU",
+    authDomain: "therapist-monitor.firebaseapp.com",
+    databaseURL: "https://therapist-monitor-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "therapist-monitor",
+    storageBucket: "therapist-monitor.firebasestorage.app",
+    messagingSenderId: "171637749913",
+    appId: "1:171637749913:web:23066401df0c2482892008",
+    measurementId: "G-RDF44SBPR8"
+  };
 
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
-}
-from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+  const firebaseApp = initializeApp(firebaseConfig);
+  const auth = getAuth(firebaseApp);
+  const db = getDatabase(firebaseApp);
 
-import {
-  getDatabase,
-  ref,
-  get,
-  set,
-  serverTimestamp
-}
-from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+  signInAnonymously(auth).catch((e) => {
+    console.error("Firebase匿名認証エラー:", e);
+    const s = document.getElementById("status");
+    if (s) s.textContent += "\nFirebase匿名認証エラー: " + (e.message || e);
+  });
 
+  let currentUser = null;
+  let monitoring = false;
+  let loggingIn = false;
 
-/* Firebase設定 */
-
-const firebaseConfig = {
-
-  apiKey:
-    "AIzaSyDeXKftF2-7yBRSJhIOP6kLd9mq2A4movU",
-
-  authDomain:
-    "therapist-monitor.firebaseapp.com",
-
-  databaseURL:
-    "https://therapist-monitor-default-rtdb.asia-southeast1.firebasedatabase.app",
-
-  projectId:
-    "therapist-monitor",
-
-  storageBucket:
-    "therapist-monitor.firebasestorage.app",
-
-  messagingSenderId:
-    "171637749913",
-
-  appId:
-    "1:171637749913:web:23066401df0c2482892008",
-
-  measurementId:
-    "G-RDF44SBPR8"
-};
-
-
-const firebaseApp = initializeApp(firebaseConfig);
-
-const auth = getAuth(firebaseApp);
-
-const db = getDatabase(firebaseApp);
-
-
-/* 現在のユーザー */
-
-let currentUser = null;
-
-let monitoring = false;
-
-
-/* DOM */
-
-const statusEl =
-  document.getElementById("status");
-
-const loginStatus =
-  document.getElementById("loginStatus");
-
-const monitorBtn =
-  document.getElementById("monitorBtn");
-
-const monitorStatus =
-  document.getElementById("monitorStatus");
-
-const loginBtn =
-  document.getElementById("loginBtn");
-
-const logoutBtn =
-  document.getElementById("logoutBtn");
-
-const emailInput =
-  document.getElementById("emailInput");
-
-const passwordInput =
-  document.getElementById("passwordInput");
-
-
-/* ログ */
-
-function log(x){
-
-  statusEl.textContent += "\n" + x;
-
-}
-
-
-/* 監視ボタン表示 */
-
-function renderMonitorButton(){
-
-  if(!currentUser){
-
-    monitorBtn.disabled = true;
-
-    monitorBtn.textContent =
-      "ログインしてください";
-
-    monitorBtn.style.background =
-      "#6b7280";
-
-    monitorStatus.textContent =
-      "Firebaseにログインすると監視設定を操作できます。";
-
-    return;
+  async function login() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const ls = document.getElementById("loginStatus");
+    if (!email || !password) {
+      ls.textContent = "メールアドレスとパスワードを入力してください。";
+      return;
+    }
+    loggingIn = true;
+    document.getElementById("loginBtn").disabled = true;
+    ls.textContent = "ログイン中…";
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      ls.textContent = "ログイン成功";
+    } catch (e) {
+      ls.textContent = "ログインエラー: " + (e.message || e);
+    } finally {
+      loggingIn = false;
+      document.getElementById("loginBtn").disabled = false;
+    }
   }
 
+  async function saveSettings() {
+    const s = document.getElementById("status");
+    if (!currentUser) { log("Firebaseにログインしてください。"); return; }
+    const selected = document.getElementById("castSelect").value;
+    const interval = Number(document.getElementById("intervalSeconds").value);
+    if (!selected) { log("セラピストを選択してください。"); return; }
+    const [name, url] = JSON.parse(selected);
+    if (!Number.isInteger(interval) || interval < 1 || interval > 86400) {
+      log("監視間隔は1～86400秒の整数で入力してください。"); return;
+    }
+    const btn = document.getElementById("saveSettingsBtn");
+    btn.disabled = true;
+    try {
+      await set(ref(db, "control/" + currentUser.uid), {
+        monitoring: monitoring,
+        castName: name,
+        castUrl: url,
+        intervalSeconds: interval,
+        updatedAt: serverTimestamp()
+      });
+      log("監視設定を保存しました: " + name + " / " + interval + "秒");
+    } catch (e) {
+      log("監視設定の保存エラー: " + (e.message || e));
+    } finally { btn.disabled = false; }
+  }
 
-  monitorBtn.disabled = false;
-
-  monitorBtn.textContent =
-    monitoring
-      ? "監視 ON（タップでOFF）"
-      : "監視 OFF（タップでON）";
-
-  monitorBtn.style.background =
-    monitoring
-      ? "#166534"
-      : "#6b7280";
-
-  monitorStatus.textContent =
-    monitoring
+  function renderMonitorButton() {
+    const btn = document.getElementById("monitorBtn");
+    const st = document.getElementById("monitorStatus");
+    if (!btn || !st) return;
+    btn.textContent = monitoring ? "監視 ON（タップでOFF）" : "監視 OFF（タップでON）";
+    btn.style.background = monitoring ? "#166534" : "#6b7280";
+    st.textContent = monitoring
       ? "現在：監視ON"
       : "現在：監視OFF";
-
-}
-
-
-/* Firebaseから監視設定を読み込む */
-
-async function loadMonitoringSetting(user){
-
-  const snap =
-    await get(
-      ref(db,"control/" + user.uid)
-    );
-
-  if(
-    snap.exists() &&
-    typeof snap.val().monitoring === "boolean"
-  ){
-
-    monitoring =
-      snap.val().monitoring;
-
-  }else{
-
-    monitoring = false;
-
   }
 
-  renderMonitorButton();
-
-}
-
-
-/* 監視ON/OFF */
-
-async function toggleMonitoring(){
-
-  if(!currentUser){
-
-    log(
-      "Firebaseログインが必要です。"
-    );
-
-    return;
-
+  async function loadMonitoringSetting(user) {
+    const snap = await get(ref(db, "control/" + user.uid));
+    if (snap.exists() && typeof snap.val().monitoring === "boolean") {
+      monitoring = snap.val().monitoring;
+    } else {
+      monitoring = false;
+    }
+    renderMonitorButton();
+    renderCastOptions(snap.exists() ? snap.val().casts : null);
+    const data = snap.exists() ? snap.val() : {};
+    if (data.castUrl && data.castName) {
+      const sel = document.getElementById("castSelect");
+      sel.value = JSON.stringify([data.castName, data.castUrl]);
+    }
+    if (Number.isInteger(data.intervalSeconds)) {
+      document.getElementById("intervalSeconds").value = data.intervalSeconds;
+    }
   }
 
+  function renderCastOptions(casts) {
+    const sel = document.getElementById("castSelect");
+    const previous = sel.value;
+    sel.innerHTML = "";
+    if (!Array.isArray(casts) || casts.length === 0) {
+      sel.add(new Option("PCで最新リスト取得後に表示されます", ""));
+      return;
+    }
+    sel.add(new Option("セラピストを選択", ""));
+    for (const c of casts) {
+      if (c && typeof c.name === "string" && typeof c.url === "string") {
+        sel.add(new Option(c.name, JSON.stringify([c.name, c.url])));
+      }
+    }
+    if (previous) sel.value = previous;
+  }
 
-  monitoring = !monitoring;
-
-  renderMonitorButton();
-
-
-  try{
-
-    await set(
-      ref(db,"control/" + currentUser.uid),
-      {
+  async function toggleMonitoring() {
+    if (!currentUser) {
+      log("Firebase認証がまだ完了していません。");
+      return;
+    }
+    monitoring = !monitoring;
+    renderMonitorButton();
+    try {
+      await set(ref(db, "control/" + currentUser.uid), {
         monitoring: monitoring,
         updatedAt: serverTimestamp()
-      }
-    );
-
-
-    log(
-      "監視設定をFirebaseに保存しました: " +
-      (monitoring ? "ON" : "OFF")
-    );
-
-
-  }catch(e){
-
-    monitoring = !monitoring;
-
-    renderMonitorButton();
-
-    log(
-      "監視設定の保存エラー: " +
-      (e && e.message ? e.message : e)
-    );
-
-  }
-
-}
-
-
-/* ログイン */
-
-async function login(){
-
-  const email =
-    emailInput.value.trim();
-
-  const password =
-    passwordInput.value;
-
-
-  if(!email || !password){
-
-    loginStatus.textContent =
-      "メールアドレスとパスワードを入力してください。";
-
-    return;
-
-  }
-
-
-  loginBtn.disabled = true;
-
-  loginStatus.textContent =
-    "ログインしています…";
-
-
-  try{
-
-    await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-
-
-    passwordInput.value = "";
-
-    loginStatus.textContent =
-      "ログインしました。";
-
-
-    log(
-      "Firebaseメール／パスワード認証: OK"
-    );
-
-
-  }catch(e){
-
-    console.error(e);
-
-    loginStatus.textContent =
-      "ログインできませんでした。";
-
-
-    log(
-      "ログインエラー: " +
-      (e && e.message ? e.message : e)
-    );
-
-  }
-
-
-  loginBtn.disabled = false;
-
-}
-
-
-/* ログアウト */
-
-async function logout(){
-
-  try{
-
-    await signOut(auth);
-
-    log(
-      "Firebaseからログアウトしました。"
-    );
-
-  }catch(e){
-
-    log(
-      "ログアウトエラー: " +
-      (e && e.message ? e.message : e)
-    );
-
-  }
-
-}
-
-
-/* Firebase認証状態 */
-
-onAuthStateChanged(
-  auth,
-  async (user) => {
-
-    if(user){
-
-      currentUser = user;
-
-      loginBtn.style.display =
-        "none";
-
-      logoutBtn.style.display =
-        "block";
-
-      emailInput.style.display =
-        "none";
-
-      passwordInput.style.display =
-        "none";
-
-
-      loginStatus.textContent =
-        "ログイン中: " +
-        (user.email || "ユーザー");
-
-
-      statusEl.textContent =
-        "ページを読み込みました。";
-
-
-      log(
-        "Firebase認証: OK"
-      );
-
-      log(
-        "Firebase UID: " +
-        user.uid
-      );
-
-
-      try{
-
-        await loadMonitoringSetting(user);
-
-        log(
-          "監視設定の読み込み: OK"
-        );
-
-      }catch(e){
-
-        log(
-          "監視設定の読み込みエラー: " +
-          (e.message || e)
-        );
-
-      }
-
-
-    }else{
-
-      currentUser = null;
-
-      monitoring = false;
-
-      loginBtn.style.display =
-        "block";
-
-      logoutBtn.style.display =
-        "none";
-
-      emailInput.style.display =
-        "block";
-
-      passwordInput.style.display =
-        "block";
-
-
-      loginStatus.textContent =
-        "ログインしていません。";
-
-
+      });
+      log("監視設定をFirebaseに保存しました: " + (monitoring ? "ON" : "OFF"));
+    } catch (e) {
+      monitoring = !monitoring;
       renderMonitorButton();
-
+      log("監視設定の保存エラー: " + (e && e.message ? e.message : e));
     }
-
   }
-);
 
+  onAuthStateChanged(auth, async (user) => {
+    const s = document.getElementById("status");
+    if (!s) return;
+    if (user) {
+      currentUser = user;
+      s.textContent += "\nFirebase匿名認証: OK";
+      s.textContent += "\nFirebase UID: " + user.uid;
+      try {
+        await loadMonitoringSetting(user);
+        s.textContent += "\n監視設定の読み込み: OK";
+      } catch (e) {
+        s.textContent += "\n監視設定の読み込みエラー: " + (e.message || e);
+      }
+    }
+  });
 
-/* ボタン */
-
-loginBtn.addEventListener(
-  "click",
-  login
-);
-
-logoutBtn.addEventListener(
-  "click",
-  logout
-);
-
-monitorBtn.addEventListener(
-  "click",
-  toggleMonitoring
-);
-
-
-renderMonitorButton();
-
+  document.getElementById("monitorBtn").addEventListener("click", toggleMonitoring);
+  document.getElementById("loginBtn").addEventListener("click", login);
+  document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+  renderMonitorButton();
 </script>
-
 
 <script>
-
-/* Web Push */
-
-const KEY =
-"BJOfQEQsoQ-jgRyVXzNqtleFFt-Wl9_RKIBQg7Epo9Q3POq__D0zz9WzPJ_Fb-G_o6ESOAyRbHcHcaXYtgkJHAI";
-
-
-const S =
-document.getElementById("status");
-
-
-function keyBytes(s){
-
-  const p =
-    "=".repeat(
-      (4 - s.length % 4) % 4
-    );
-
-  const r =
-    atob(
-      (s + p)
-      .replace(/-/g,"+")
-      .replace(/_/g,"/")
-    );
-
-  return Uint8Array.from(
-    [...r].map(
-      c => c.charCodeAt(0)
-    )
-  );
-
-}
-
-
-/* Push登録 */
-
+const KEY="BJOfQEQsoQ-jgRyVXzNqtleFFt-Wl9_RKIBQg7Epo9Q3POq__D0zz9WzPJ_Fb-G_o6ESOAyRbHcHcaXYtgkJHAI";
+const S=document.getElementById("status");
+function log(x){S.textContent+="\n"+x}
+function keyBytes(s){const p="=".repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
 async function regPush(){
-
-  S.textContent =
-    "ボタンが押されました。登録処理を開始します。";
-
-
-  try{
-
-    log(
-      "standalone表示: " +
-      (
-        matchMedia(
-          "(display-mode: standalone)"
-        ).matches
-        ? "YES"
-        : "NO"
-      )
-    );
-
-
-    log(
-      "Notification API: " +
-      ("Notification" in window
-        ? "YES"
-        : "NO")
-    );
-
-
-    log(
-      "Service Worker: " +
-      ("serviceWorker" in navigator
-        ? "YES"
-        : "NO")
-    );
-
-
-    log(
-      "PushManager(window): " +
-      ("pushManager" in window
-        ? "YES"
-        : "NO")
-    );
-
-
-    if(!("Notification" in window))
-      throw Error(
-        "Notification APIがありません。"
-      );
-
-
-    if(!("serviceWorker" in navigator))
-      throw Error(
-        "Service Worker APIがありません。"
-      );
-
-
-    log(
-      "通知許可を確認します…"
-    );
-
-
-    let p =
-      Notification.permission;
-
-
-    log(
-      "現在の通知許可: " + p
-    );
-
-
-    if(p === "default"){
-
-      p =
-        await Notification.requestPermission();
-
-      log(
-        "通知許可の結果: " + p
-      );
-
-    }
-
-
-    if(p !== "granted")
-      throw Error(
-        "通知許可がgrantedではありません: " + p
-      );
-
-
-    const r =
-      await navigator.serviceWorker.register(
-        "./sw.js",
-        {scope:"./"}
-      );
-
-
-    await navigator.serviceWorker.ready;
-
-
-    log(
-      "Service Worker: OK"
-    );
-
-
-    let sub =
-      await r.pushManager.getSubscription();
-
-
-    if(sub){
-
-      log(
-        "既存のPushSubscriptionを解除します…"
-      );
-
-      await sub.unsubscribe();
-
-      sub = null;
-
-    }
-
-
-    log(
-      "新しいPushSubscriptionを作成します…"
-    );
-
-
-    sub =
-      await r.pushManager.subscribe({
-
-        userVisibleOnly:true,
-
-        applicationServerKey:
-          keyBytes(KEY)
-
-      });
-
-
-    localStorage.setItem(
-      "pushSubscription",
-      JSON.stringify(sub)
-    );
-
-
-    log(
-      "★ プッシュ通知の登録に成功しました！"
-    );
-
-
-  }catch(e){
-
-    log(
-      "ERROR: " +
-      (
-        e && e.message
-        ? e.message
-        : String(e)
-      )
-    );
-
-  }
-
+ S.textContent="ボタンが押されました。登録処理を開始します。";
+ try{
+  log("standalone表示: "+(matchMedia("(display-mode: standalone)").matches?"YES":"NO"));
+  log("Notification API: "+("Notification"in window?"YES":"NO"));
+  log("Service Worker: "+("serviceWorker"in navigator?"YES":"NO"));
+  log("PushManager(window): "+("pushManager"in window?"YES":"NO"));
+  if(!("Notification"in window))throw Error("Notification APIがありません。");
+  if(!("serviceWorker"in navigator))throw Error("Service Worker APIがありません。");
+  log("通知許可を確認します…");
+  let p=Notification.permission; log("現在の通知許可: "+p);
+  if(p==="default"){p=await Notification.requestPermission();log("通知許可の結果: "+p)}
+  if(p!=="granted")throw Error("通知許可がgrantedではありません: "+p);
+  const r=await navigator.serviceWorker.register("./sw.js",{scope:"./"});
+  await navigator.serviceWorker.ready; log("Service Worker: OK");
+let sub=await r.pushManager.getSubscription();
+if(sub){
+  log("既存のPushSubscriptionを解除します…");
+  await sub.unsubscribe();
+  sub=null;
 }
-
-
-/* ローカル通知 */
-
+log("新しいPushSubscriptionを作成します…");
+sub=await r.pushManager.subscribe({
+  userVisibleOnly:true,
+  applicationServerKey:keyBytes(KEY)
+});
+  localStorage.setItem("pushSubscription",JSON.stringify(sub));
+  log("★ プッシュ通知の登録に成功しました！");
+ }catch(e){log("ERROR: "+(e&&e.message?e.message:String(e)))}
+}
 async function localTest(){
-
-  S.textContent =
-    "ローカル通知テストを開始します。";
-
-
-  try{
-
-    if(!("Notification" in window))
-      throw Error(
-        "Notification APIがありません。"
-      );
-
-
-    let p =
-      Notification.permission;
-
-
-    if(p === "default")
-      p =
-        await Notification.requestPermission();
-
-
-    if(p !== "granted")
-      throw Error(
-        "通知許可がありません。"
-      );
-
-
-    new Notification(
-      "Therapist Monitor",
-      {
-        body:
-          "ローカル通知テストです。"
-      }
-    );
-
-
-    log(
-      "ローカル通知を発行しました。"
-    );
-
-
-  }catch(e){
-
-    log(
-      "ERROR: " +
-      (
-        e && e.message
-        ? e.message
-        : String(e)
-      )
-    );
-
-  }
-
+ S.textContent="ローカル通知テストを開始します。";
+ try{if(!("Notification"in window))throw Error("Notification APIがありません。");let p=Notification.permission;if(p==="default")p=await Notification.requestPermission();if(p!=="granted")throw Error("通知許可がありません: "+p);new Notification("Therapist Monitor",{body:"ローカル通知テストです。"});log("ローカル通知を発行しました。")}catch(e){log("ERROR: "+(e&&e.message?e.message:String(e)))}
 }
-
-
-/* Push登録情報コピー */
-
-function copySub(){
-
-  const x =
-    localStorage.getItem(
-      "pushSubscription"
-    );
-
-
-  if(!x){
-
-    log(
-      "まだPush登録情報がありません。①を先に押してください。"
-    );
-
-    return;
-
-  }
-
-
-  navigator.clipboard.writeText(x)
-    .then(
-      () =>
-        log(
-          "登録情報をコピーしました。"
-        ),
-      e =>
-        log(
-          "コピー失敗: " + e
-        )
-    );
-
-}
-
-
-/* Push関連ボタン */
-
-document
-  .getElementById("pushBtn")
-  .onclick = regPush;
-
-
-document
-  .getElementById("testBtn")
-  .onclick = localTest;
-
-
-document
-  .getElementById("copyBtn")
-  .onclick = copySub;
-
-
-log(
-  "URL: " + location.href
-);
-
-log(
-  "画面読み込み完了。"
-);
-
-</script>
-
-</main>
-</body>
-</html>
+function copySub(){const x=localStorage.getItem("pushSubscription");if(!x){log("まだPush登録情報がありません。①を先に押してください。");return}navigator.clipboard.writeText(x).then(()=>log("登録情報をコピーしました。"),e=>log("コピー失敗: "+e))}
+pushBtn.onclick=regPush;testBtn.onclick=localTest;copyBtn.onclick=copySub;
+log("URL: "+location.href);log("画面読み込み完了。");
+</script></main></body></html>
