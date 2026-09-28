@@ -39,7 +39,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-  import { getDatabase, ref, get, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+  import { getDatabase, ref, get, set, update, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDeXKftF2-7yBRSJhIOP6kLd9mq2A4movU",
@@ -55,12 +55,6 @@
   const firebaseApp = initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
   const db = getDatabase(firebaseApp);
-
-  signInAnonymously(auth).catch((e) => {
-    console.error("Firebase匿名認証エラー:", e);
-    const s = document.getElementById("status");
-    if (s) s.textContent += "\nFirebase匿名認証エラー: " + (e.message || e);
-  });
 
   let currentUser = null;
   let monitoring = false;
@@ -101,8 +95,7 @@
     const btn = document.getElementById("saveSettingsBtn");
     btn.disabled = true;
     try {
-      await set(ref(db, "control/" + currentUser.uid), {
-        monitoring: monitoring,
+      await update(ref(db, "control/" + currentUser.uid), {
         castName: name,
         castUrl: url,
         intervalSeconds: interval,
@@ -169,7 +162,7 @@
     monitoring = !monitoring;
     renderMonitorButton();
     try {
-      await set(ref(db, "control/" + currentUser.uid), {
+      await update(ref(db, "control/" + currentUser.uid), {
         monitoring: monitoring,
         updatedAt: serverTimestamp()
       });
@@ -186,7 +179,8 @@
     if (!s) return;
     if (user) {
       currentUser = user;
-      s.textContent += "\nFirebase匿名認証: OK";
+      document.getElementById("loginStatus").textContent = "ログイン済み";
+      s.textContent += "\nFirebase認証: OK";
       s.textContent += "\nFirebase UID: " + user.uid;
       try {
         await loadMonitoringSetting(user);
